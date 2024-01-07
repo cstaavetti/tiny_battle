@@ -400,12 +400,12 @@ endif
 # Define source code object files required
 #------------------------------------------------------------------------------------------------
 PROJECT_SOURCE_FILES ?= \
-    tiny_battle.c \
-    tiles.c \
-    structs.c \
-    logic.c \
-    util.c \
-    input.c \
+    src/tiny_battle.c \
+    src/tiles.c \
+    src/structs.c \
+    src/logic.c \
+    src/util.c \
+    src/input.c \
 
 # Define all object files from source files
 OBJS = $(patsubst %.c, %.o, $(PROJECT_SOURCE_FILES))
