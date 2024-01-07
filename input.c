@@ -73,12 +73,13 @@ void UpdateTouchMap() {
 
 bool TouchIsKeyDown(int key) {
 #if defined(PLATFORM_WEB)
+  bool press = false;
   for (short i = 0; i < 6; i++) {
     if (keyMap[i] == key) {
-      return touchMap[i].keyDown;
+      press = touchMap[i].keyDown;
     }
   }
-  return false;
+  return press == false ? IsKeyDown(key) : true;
 #else
   return IsKeyDown(key);
 #endif
@@ -86,12 +87,13 @@ bool TouchIsKeyDown(int key) {
 
 bool TouchIsKeyPressed(int key) {
 #if defined(PLATFORM_WEB)
+  bool press = false;
   for (short i = 0; i < 6; i++) {
     if (keyMap[i] == key) {
-      return touchMap[i].pressed;
+      press = touchMap[i].pressed;
     }
   }
-  return false;
+  return press == false ? IsKeyPressed(key) : true;
 #else
   return IsKeyPressed(key);
 #endif
