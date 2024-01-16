@@ -10,8 +10,6 @@
 
 short Targets[DIR_COUNT];
 
-short Cursor;
-short SelIndex;
 short GameState;
 bool CPUEnabled;
 
@@ -20,6 +18,7 @@ Unit units[MAP_SIZE];
 
 short playerUnitCount;
 short cpuUnitCount;
+short selectedLocation;
 
 void zeroWalkableArea() {
   for (short i = 0; i < MAP_SIZE; i++) {
@@ -39,15 +38,30 @@ void zeroUnits() {
   }
 }
 
-void updateGameState(short state) {
+void updateGameState(short state, short mIndex) {
   GameState = state;
+  selectedLocation = mIndex;
   if (GameState == STATE_IDLE) {
     CPUEnabled = !CPUEnabled;
   }
 }
 
+void addTestShape() {
+  map[1].type = SURFACE_TEST_A;
+  map[2].type = SURFACE_TEST_A;
+  map[3].type = SURFACE_TEST_A;
+
+  map[TILE_COUNT_WIDTH].type = SURFACE_TEST_B;
+  map[TILE_COUNT_WIDTH * 2].type = SURFACE_TEST_B;
+  map[TILE_COUNT_WIDTH * 3].type = SURFACE_TEST_B;
+  map[TILE_COUNT_WIDTH * 4].type = SURFACE_TEST_B;
+  map[TILE_COUNT_WIDTH * 5].type = SURFACE_TEST_B;
+  map[TILE_COUNT_WIDTH * 6].type = SURFACE_TEST_B;
+}
+
 void generateMap() {
   // TEMP
+  // for generating completely random maps for testing
   for (short i = 0; i < MAP_SIZE; i++) {
     short surfaceType = GetRandomValue(0, 2);
     short team = GetRandomValue(0, 12);
@@ -70,14 +84,13 @@ void generateMap() {
     }
     map[i] = (Surface){.type = surfaceType, .unitIndex = unitIndex};
   }
+  // addTestShape();
 }
 
 void InitGame() {
-  Cursor = 20;
-  SelIndex = -1;
   playerUnitCount = 0;
   cpuUnitCount = UNIT_SPLIT - 1;
-  updateGameState(STATE_IDLE);
+  updateGameState(STATE_IDLE, OUTSIDE_MAP);
   CPUEnabled = false;
   zeroWalkableArea();
   zeroTargets();
@@ -132,10 +145,6 @@ bool hasFriendlyUnit(short mIndex, short team) {
 bool hasEnemyUnit(short mIndex, short team) {
   return HasUnit(mIndex) && GetUnitTeam(mIndex) != team;
 }
-
-void clearSelection() { SelIndex = -1; }
-
-bool tileSelected() { return SelIndex > -1; }
 
 bool isInPlayingArea(short mIndex) { return mIndex > -1 && mIndex < MAP_SIZE; }
 
@@ -217,186 +226,64 @@ bool moveUnitOnMap(short mX, short mY) {
   return true;
 }
 
-short checkForTarget(short mIndex, short team, short dir) {
+bool checkForTarget(short mIndex, short team, short dir) {
   if (isInPlayingArea(mIndex)) {
     if (hasEnemyUnit(mIndex, team)) {
       Targets[dir] = mIndex;
-      return 1;
+      return true;
     } else if (hasFriendlyUnit(mIndex, team)) {
-      return 2;
+      return true;
     }
   }
-  return 0;
+  return false;
 }
 
 bool findTargets(short mIndex) {
   zeroTargets();
-  bool found = false;
   short type = GetUnitType(mIndex);
   short range = GetUnitFireRange(type);
   short team = GetUnitTeam(mIndex);
-
-  for (short i = 1; i <= range; i++) {
-    short check = checkForTarget(IndexUpBy(mIndex, i), team, DIR_U);
-    if (check == 1) {
-      found = true;
-    }
-    if (check > 0) {
-      break;
-    }
-  }
-  for (short i = 1; i <= range; i++) {
-    short check = checkForTarget(IndexRightBy(mIndex, i), team, DIR_R);
-    if (check == 1) {
-      found = true;
-    }
-    if (check > 0) {
-      break;
-    }
-  }
-  for (short i = 1; i <= range; i++) {
-    short check = checkForTarget(IndexDownBy(mIndex, i), team, DIR_D);
-    if (check == 1) {
-      found = true;
-    }
-    if (check > 0) {
-      break;
-    }
-  }
-  for (short i = 1; i <= range; i++) {
-    short check = checkForTarget(IndexLeftBy(mIndex, i), team, DIR_L);
-    if (check == 1) {
-      found = true;
-    }
-    if (check > 0) {
-      break;
-    }
-  }
-  if (CanFireDiagonal(type)) {
+  short dirCount = CanFireDiagonal(type) ? DIR_COUNT : DIR_COUNT / 2;
+  bool result = false;
+  for (short dir = 0; dir < dirCount; dir++) {
     for (short i = 1; i <= range; i++) {
-      short check =
-          checkForTarget(IndexLeftBy(IndexUpBy(mIndex, i), i), team, DIR_UL);
-      if (check == 1) {
-        found = true;
-      }
-      if (check > 0) {
-        break;
-      }
-    }
-    for (short i = 1; i <= range; i++) {
-      short check =
-          checkForTarget(IndexRightBy(IndexUpBy(mIndex, i), i), team, DIR_UR);
-      if (check == 1) {
-        found = true;
-      }
-      if (check > 0) {
-        break;
-      }
-    }
-    for (short i = 1; i <= range; i++) {
-      short check =
-          checkForTarget(IndexRightBy(IndexDownBy(mIndex, i), i), team, DIR_DR);
-      if (check == 1) {
-        found = true;
-      }
-      if (check > 0) {
-        break;
-      }
-    }
-    for (short i = 1; i <= range; i++) {
-      short check =
-          checkForTarget(IndexLeftBy(IndexDownBy(mIndex, i), i), team, DIR_DL);
-      if (check == 1) {
-        found = true;
-      }
-      if (check > 0) {
+      if (checkForTarget(IndexToDirBy(dir, mIndex, i), team, dir)) {
+        result = true;
         break;
       }
     }
   }
-  return found;
+  return result;
 }
 
 void playerControl() {
-  short nCursor = OUTSIDE_MAP;
-  if (GameState == STATE_FIRE) {
-    if (TouchIsKeyDown(KEY_UP) && targetInDir(DIR_U)) {
-      nCursor = Targets[DIR_U];
-    }
-    if (TouchIsKeyDown(KEY_DOWN) && targetInDir(DIR_D)) {
-      nCursor = Targets[DIR_D];
-    }
-    if (TouchIsKeyDown(KEY_LEFT) && targetInDir(DIR_L)) {
-      nCursor = Targets[DIR_L];
-    }
-    if (TouchIsKeyDown(KEY_RIGHT) && targetInDir(DIR_R)) {
-      nCursor = Targets[DIR_R];
-    }
-    if (TouchIsKeyDown(KEY_UP) && TouchIsKeyDown(KEY_RIGHT) &&
-        targetInDir(DIR_UR)) {
-      nCursor = Targets[DIR_UR];
-    }
-    if (TouchIsKeyDown(KEY_UP) && TouchIsKeyDown(KEY_LEFT) &&
-        targetInDir(DIR_UL)) {
-      nCursor = Targets[DIR_UL];
-    }
-    if (TouchIsKeyDown(KEY_DOWN) && TouchIsKeyDown(KEY_RIGHT) &&
-        targetInDir(DIR_DR)) {
-      nCursor = Targets[DIR_DR];
-    }
-    if (TouchIsKeyDown(KEY_DOWN) && TouchIsKeyDown(KEY_LEFT) &&
-        targetInDir(DIR_DL)) {
-      nCursor = Targets[DIR_DL];
-    }
-  } else {
-    if (TouchIsKeyPressed(KEY_LEFT)) {
-      nCursor = IndexLeft(Cursor);
-    } else if (TouchIsKeyPressed(KEY_RIGHT)) {
-      nCursor = IndexRight(Cursor);
-    }
-    if (TouchIsKeyPressed(KEY_UP)) {
-      nCursor = IndexUp(Cursor);
-    } else if (TouchIsKeyPressed(KEY_DOWN)) {
-      nCursor = IndexDown(Cursor);
-    }
+  short inputIndex = ClickTouchIndex();
+  if (inputIndex < 0) {
+    return;
   }
-  Cursor = nCursor == OUTSIDE_MAP ? Cursor : nCursor;
-  if (TouchIsKeyPressed(KEY_X)) {
-    if (GameState == STATE_IDLE) {
-      // Try to select a unit
-      if (HasUnit(Cursor) && GetUnitTeam(Cursor) == PLAYER_TEAM) {
-        SelIndex = Cursor;
-        genWalkableArea(Cursor);
-        updateGameState(STATE_MOVE);
-      }
-    } else if (GameState == STATE_MOVE) {
-      if (areaIsPassable(Cursor)) {
-        moveUnitOnMap(SelIndex, Cursor);
-        SelIndex = Cursor;
-        if (findTargets(SelIndex)) {
-          updateGameState(STATE_FIRE);
-        } else {
-          clearSelection();
-          updateGameState(STATE_IDLE);
-        }
+
+  if (GameState == STATE_IDLE) {
+    // Try to select a unit
+    if (HasUnit(inputIndex) && GetUnitTeam(inputIndex) == PLAYER_TEAM) {
+      genWalkableArea(inputIndex);
+      updateGameState(STATE_MOVE, inputIndex);
+    }
+  } else if (GameState == STATE_MOVE) {
+    if (areaIsPassable(inputIndex)) {
+      moveUnitOnMap(selectedLocation, inputIndex);
+      if (findTargets(inputIndex)) {
+        updateGameState(STATE_FIRE, inputIndex);
       } else {
-        clearSelection();
-        updateGameState(STATE_IDLE);
+        updateGameState(STATE_IDLE, OUTSIDE_MAP);
       }
-    } else if (GameState == STATE_FIRE) {
-      if (Cursor != SelIndex) {
-        damageIndex(Cursor, GetUnitDamage(GetUnitType(SelIndex)));
-      }
-      Cursor = SelIndex;
-      clearSelection();
-      updateGameState(STATE_IDLE);
+    } else {
+      updateGameState(STATE_IDLE, OUTSIDE_MAP);
     }
-  }
-  if (TouchIsKeyPressed(KEY_Z)) {
-    if (tileSelected()) {
-      clearSelection();
-      updateGameState(STATE_IDLE);
+  } else if (GameState == STATE_FIRE) {
+    if (locationInTargets(inputIndex)) {
+      damageIndex(inputIndex, GetUnitDamage(GetUnitType(selectedLocation)));
     }
+    updateGameState(STATE_IDLE, OUTSIDE_MAP);
   }
 }
 
@@ -408,31 +295,11 @@ short canFireAt(short mTarget, short type) {
   // Relies on the idea that the pattern of where a unit can fire is identical
   // to where it can fire from.
   short range = GetUnitFireRange(type);
+  short dirCount = CanFireDiagonal(type) ? DIR_COUNT : DIR_COUNT / 2;
   for (short i = range; i > 0; i--) {
-    if (areaIsPassableSafe(IndexUpBy(mTarget, i))) {
-      return IndexUpBy(mTarget, i);
-    }
-    if (areaIsPassableSafe(IndexRightBy(mTarget, i))) {
-      return IndexRightBy(mTarget, i);
-    }
-    if (areaIsPassableSafe(IndexDownBy(mTarget, i))) {
-      return IndexDownBy(mTarget, i);
-    }
-    if (areaIsPassableSafe(IndexLeftBy(mTarget, i))) {
-      return IndexLeftBy(mTarget, i);
-    }
-    if (CanFireDiagonal(type)) {
-      if (areaIsPassableSafe(IndexLeftBy(IndexUpBy(mTarget, i), i))) {
-        return IndexLeftBy(IndexUpBy(mTarget, i), i);
-      }
-      if (areaIsPassableSafe(IndexRightBy(IndexUpBy(mTarget, i), i))) {
-        return IndexRightBy(IndexUpBy(mTarget, i), i);
-      }
-      if (areaIsPassableSafe(IndexRightBy(IndexDownBy(mTarget, i), i))) {
-        return IndexRightBy(IndexDownBy(mTarget, i), i);
-      }
-      if (areaIsPassableSafe(IndexLeftBy(IndexDownBy(mTarget, i), i))) {
-        return IndexLeftBy(IndexDownBy(mTarget, i), i);
+    for (short dir = 0; dir < dirCount; dir++) {
+      if (areaIsPassableSafe(IndexToDirBy(dir, mTarget, i))) {
+        return IndexToDirBy(dir, mTarget, i);
       }
     }
   }
@@ -572,13 +439,9 @@ void cpuControl() {
 }
 
 void RunGame() {
-#if defined(PLATFORM_WEB)
-  UpdateTouchMap();
-#endif
   if (CPUEnabled) {
     cpuControl();
-    clearSelection();
-    updateGameState(STATE_IDLE);
+    updateGameState(STATE_IDLE, OUTSIDE_MAP);
   } else {
     playerControl();
   }

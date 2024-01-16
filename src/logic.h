@@ -7,7 +7,7 @@
 #define CLAMP(x, min, max) (MAX(MIN(x, max), min))
 
 #define TILE_COUNT_WIDTH 8
-#define TILE_COUNT_HEIGHT 8
+#define TILE_COUNT_HEIGHT 13
 #define MAP_SIZE TILE_COUNT_WIDTH *TILE_COUNT_HEIGHT
 #define OUTSIDE_MAP -1
 
@@ -17,18 +17,17 @@
 
 #define DIR_COUNT 8
 #define DIR_U 0
-#define DIR_UR 1
-#define DIR_R 2
-#define DIR_DR 3
-#define DIR_D 4
-#define DIR_DL 5
-#define DIR_L 6
-#define DIR_UL 7
+#define DIR_D 1
+#define DIR_L 2
+#define DIR_R 3
+#define DIR_UL 4
+#define DIR_UR 5
+#define DIR_DL 6
+#define DIR_DR 7
 
-extern short Targets[DIR_COUNT]; // up, ur, right, dr, down, dl, left, ul
+extern short Targets[DIR_COUNT]; // up, down, left, right, upleft, upright,
+                                 // downleft, downright
 
-extern short Cursor;
-extern short SelIndex;
 extern short GameState;
 extern bool CPUEnabled;
 

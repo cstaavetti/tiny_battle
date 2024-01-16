@@ -29,15 +29,16 @@
 #define SURFACE_GRASS_PLAIN 0
 #define SURFACE_GRASS 1
 #define SURFACE_GRASS_FLOWER 2
+#define SURFACE_TEST_A 3
+#define SURFACE_TEST_B 4
 
 #define WALK_DENIED 0
 #define WALK_ALLOWED 1
 #define WALK_PASS 2
 #define WALK_CURRENT 3
 
-#define WEB_HEIGHT 192
-extern short gameScreenWidth;
-extern short gameScreenHeight;
+extern short gameSWidth;
+extern short gameSHeight;
 
 typedef struct Unit {
   short type;

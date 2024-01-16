@@ -22,13 +22,8 @@ Rectangle TILE_GRAY_GRUNT;
 Rectangle TILE_BLUE_TANK;
 Rectangle TILE_BLUE_GRUNT;
 
-Texture2D CONTROLLER_TILE_MAP;
-Rectangle TILE_CONTROLLER;
-
 void InitTiles() {
   TILE_MAP = LoadTexture("resources/tilemap_packed.png");
-  CONTROLLER_TILE_MAP = LoadTexture("resources/controller.png");
-  TILE_CONTROLLER = (Rectangle){0.0f, 0.0f, 128, 64};
 
   TILE_QUESTION_MARK = (Rectangle){10.0f * TILE_SIZE, 10.0f * TILE_SIZE,
                                    (float)TILE_SIZE, (float)TILE_SIZE};

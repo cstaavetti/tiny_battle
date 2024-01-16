@@ -1,8 +1,8 @@
 #include "structs.h"
 #include "tiles.h"
 
-short gameScreenWidth = 128;
-short gameScreenHeight = 128;
+short gameSWidth = 128;
+short gameSHeight = 208;
 
 Rectangle GetUnitRect(short type, short team) {
   switch (type) {
@@ -37,7 +37,12 @@ Rectangle GetSurfaceRect(short type) {
     return TILE_GRASS;
   case SURFACE_GRASS_FLOWER:
     return TILE_GRASS_FLOWER;
+  case SURFACE_TEST_A:
+    return TILE_HIGHLIGHT_R;
+  case SURFACE_TEST_B:
+    return TILE_HIGHLIGHT_Y;
   }
+
   return TILE_QUESTION_MARK;
 }
 

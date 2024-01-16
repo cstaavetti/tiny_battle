@@ -23,9 +23,6 @@ extern Rectangle TILE_GRAY_GRUNT;
 extern Rectangle TILE_BLUE_TANK;
 extern Rectangle TILE_BLUE_GRUNT;
 
-extern Texture2D CONTROLLER_TILE_MAP;
-extern Rectangle TILE_CONTROLLER;
-
 extern void InitTiles();
 
 #endif
